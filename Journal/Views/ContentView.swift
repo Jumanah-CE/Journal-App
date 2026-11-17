@@ -7,6 +7,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var showSplashScreen = true
+    @State private var showEditor = false
     @State private var viewModel: JournalViewModel?
 
     var body: some View {
@@ -14,50 +15,56 @@ struct ContentView: View {
         Group {
 
             if showSplashScreen {
+
                 SplashScreen()
 
             } else if let viewModel {
 
-                NavigationStack {
+                if viewModel.entries.isEmpty {
 
-                    Group {
+                    HomeView {
+                        showEditor = true
+                    }
 
-                        if viewModel.entries.isEmpty {
-                            HomeView()
+                } else {
 
-                        } else {
-                            HomeJournalList(
-                                entries: viewModel.entries,
-                                onBookmark: { entry in
-                                    viewModel.toggleBookmark(entry)
-                                },
-                                onDelete: { entry in
-                                    viewModel.deleteEntry(entry)
-                                },
-                                onUpdate: { entry, title, content in
-                                    _ = viewModel.updateEntry(
-                                        entry,
-                                        title: title,
-                                        content: content
-                                    )
-                                }
+                    HomeJournalList(
+                        entries: viewModel.entries,
+
+                        onBookmark: { entry in
+                            viewModel.toggleBookmark(entry)
+                        },
+
+                        onDelete: { entry in
+                            viewModel.deleteEntry(entry)
+                        },
+
+                        onUpdate: { entry, title, content in
+                            _ = viewModel.updateEntry(
+                                entry,
+                                title: title,
+                                content: content
                             )
-                        }
-                    }
-                    .toolbar(.hidden, for: .navigationBar)
-                    .navigationDestination(for: String.self) { destination in
+                        },
 
-                        if destination == "addJournal" {
-
-                            JournalEditorView { title, content in
-                                _ = viewModel.addEntry(
-                                    title: title,
-                                    content: content
-                                )
-                            }
+                        // FIX: Connect the plus button
+                        onAddJournal: {
+                            showEditor = true
                         }
-                    }
+                    )
                 }
+            }
+        }
+        .sheet(isPresented: $showEditor) {
+
+            JournalEditorView { title, content in
+
+                guard let viewModel else { return }
+
+                _ = viewModel.addEntry(
+                    title: title,
+                    content: content
+                )
             }
         }
         .task {

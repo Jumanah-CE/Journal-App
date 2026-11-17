@@ -3,30 +3,34 @@ import SwiftUI
 
 struct JournalEditorView: View {
 
+    // MARK: - Properties
+
     @Environment(\.dismiss) private var dismiss
+
+    let entry: JournalEntry?
+    let onSave: (String, String) -> Void
 
     @State private var title: String
     @State private var content: String
     @State private var showDiscardAlert = false
 
-    @FocusState private var isTitleFocused: Bool
+    @FocusState private var isContentFocused: Bool
 
-    let entry: JournalEntry?
-    let onSave: (String, String) -> Void
+    // MARK: - Colors
 
-    // MARK: Colors
+    private let backgroundColor = Color(
+        red: 28.0 / 255,
+        green: 28.0 / 255,
+        blue: 30.0 / 255
+    )
 
-    private let accentColor = Color(
+    private let primaryAccent = Color(
         red: 127.0 / 255,
         green: 129.0 / 255,
         blue: 255.0 / 255
     )
 
-    private let surfaceColor = Color(
-        red: 28.0 / 255,
-        green: 28.0 / 255,
-        blue: 30.0 / 255
-    )
+    private let primaryText = Color.white
 
     private let secondaryText = Color(
         red: 163.0 / 255,
@@ -34,13 +38,12 @@ struct JournalEditorView: View {
         blue: 154.0 / 255
     )
 
-    private let destructiveColor = Color(
-        red: 253.0 / 255,
-        green: 69.0 / 255,
-        blue: 60.0 / 255
-    )
+    private var hasText: Bool {
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
-    // MARK: Initializer
+    // MARK: - Initializer
 
     init(
         entry: JournalEntry? = nil,
@@ -53,221 +56,155 @@ struct JournalEditorView: View {
         _content = State(initialValue: entry?.content ?? "")
     }
 
-    // MARK: Changes Detection
-
-    private var hasChanges: Bool {
-        title != (entry?.title ?? "") ||
-        content != (entry?.content ?? "")
-    }
-
-    // MARK: Body
+    // MARK: - Body
 
     var body: some View {
 
-        ZStack {
+        NavigationStack {
 
-            Color.black
-                .ignoresSafeArea()
+            ZStack {
 
-            VStack(spacing: 0) {
+                backgroundColor
+                    .ignoresSafeArea()
 
-                // MARK: Drag Handle
+                VStack(alignment: .leading, spacing: 0) {
 
-                Capsule()
-                    .fill(secondaryText.opacity(0.5))
-                    .frame(width: 36, height: 4)
-                    .padding(.top, 8)
-                    .padding(.bottom, 12)
+                    // MARK: Title
 
-                // MARK: Header
+                    TextField("Title", text: $title)
+                        .font(.system(size: 34, weight: .semibold))
+                        .foregroundStyle(primaryText)
+                        .tint(primaryAccent)
+                        .padding(.top, 12)
 
-                HStack {
+                    // MARK: Date
 
-                    Button {
-                        cancelEditing()
-                    } label: {
-
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16))
-                            .foregroundStyle(.white)
-                            .frame(width: 32, height: 32)
-                            .background(surfaceColor)
-                            .clipShape(Circle())
-                    }
-                    .accessibilityLabel("Cancel")
-
-                    Spacer()
-
-                    Button {
-                        saveJournal()
-                    } label: {
-
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(.black)
-                            .frame(width: 36, height: 36)
-                            .background(accentColor)
-                            .clipShape(Circle())
-                    }
-                    .accessibilityLabel("Save journal")
-                }
-                .padding(.horizontal, 14)
-
-                // MARK: Title
-
-                TextField("Title", text: $title)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(.white)
-                    .tint(accentColor)
-                    .focused($isTitleFocused)
+                    Text(
+                        entry?.dateCreated ?? Date(),
+                        format: .dateTime.day().month().year()
+                    )
+                    .font(.system(size: 16))
+                    .foregroundStyle(secondaryText)
                     .padding(.top, 12)
 
-                // MARK: Date
+                    // MARK: Journal Content
 
-                Text(
-                    entry?.dateCreated ?? .now,
-                    format: .dateTime.day().month().year()
-                )
-                .font(.system(size: 12))
-                .foregroundStyle(secondaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 6)
-
-                // MARK: Journal Content
-
-                TextEditor(text: $content)
-                    .font(.system(size: 16))
-                    .foregroundStyle(.white)
-                    .tint(accentColor)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .overlay(alignment: .topLeading) {
+                    ZStack(alignment: .topLeading) {
 
                         if content.isEmpty {
+
                             Text("Type your Journal...")
-                                .font(.system(size: 16))
+                                .font(.system(size: 18))
                                 .foregroundStyle(secondaryText)
                                 .padding(.top, 8)
                                 .padding(.leading, 5)
                                 .allowsHitTesting(false)
                         }
+
+                        TextEditor(text: $content)
+                            .font(.system(size: 18))
+                            .foregroundStyle(primaryText)
+                            .tint(primaryAccent)
+                            .scrollContentBackground(.hidden)
+                            .background(Color.clear)
+                            .focused($isContentFocused)
                     }
-                    .padding(.top, 12)
+                    .padding(.top, 18)
 
-                Spacer(minLength: 0)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 20)
             }
-            .padding(.horizontal, 14)
 
-            // MARK: Discard Confirmation
+            // MARK: Native Toolbar
 
-            if showDiscardAlert {
-                discardConfirmation
-                    .transition(.opacity)
-                    .zIndex(1)
+            .toolbar {
+
+                // MARK: Native Close Button
+
+                ToolbarItem(placement: .cancellationAction) {
+
+                    Button {
+                        if hasText {
+                            showDiscardAlert = true
+                        } else {
+                            dismiss()
+                        }
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .accessibilityLabel("Close")
+                }
+
+                // MARK: Save Button
+
+                ToolbarItem(placement: .confirmationAction) {
+
+                    Button {
+
+                        guard hasText else { return }
+
+                        onSave(
+                            title.trimmingCharacters(
+                                in: .whitespacesAndNewlines
+                            ),
+                            content.trimmingCharacters(
+                                in: .whitespacesAndNewlines
+                            )
+                        )
+
+                        dismiss()
+
+                    } label: {
+                        Image(systemName: "checkmark")
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(primaryAccent)
+                    .accessibilityLabel("Save")
+                }
             }
+
+            .toolbarBackground(backgroundColor, for: .navigationBar)
+            .preferredColorScheme(.dark)
+
+            // MARK: Discard Changes Alert
+
+            .alert(
+                "Discard Changes",
+                isPresented: $showDiscardAlert,
+                actions: {
+
+                    Button("Discard Changes", role: .destructive) {
+                        dismiss()
+                    }
+
+                    Button("Keep Editing", role: .cancel) {
+                        showDiscardAlert = false
+                    }
+                },
+                message: {
+                    Text(
+                        "Are you sure you want to discard changes on this journal?"
+                    )
+                }
+            )
         }
         .preferredColorScheme(.dark)
-        .toolbar(.hidden, for: .navigationBar)
-        .animation(
-            .easeInOut(duration: 0.2),
-            value: showDiscardAlert
-        )
-        .task {
-            try? await Task.sleep(for: .milliseconds(300))
 
-            guard !Task.isCancelled else {
-                return
-            }
+        // MARK: Keyboard Focus
 
-            isTitleFocused = true
+        .onAppear {
+            isContentFocused = true
         }
     }
+}
 
-    // MARK: Save Journal
+// MARK: - Preview
 
-    private func saveJournal() {
-
-        let trimmedTitle = title.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        )
-
-        let trimmedContent = content.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        )
-
-        guard !trimmedTitle.isEmpty || !trimmedContent.isEmpty else {
-            return
-        }
-
-        onSave(trimmedTitle, trimmedContent)
-        dismiss()
-    }
-
-    // MARK: Cancel Editing
-
-    private func cancelEditing() {
-
-        if hasChanges {
-            showDiscardAlert = true
-        } else {
-            dismiss()
-        }
-    }
-
-    // MARK: Discard Confirmation
-
-    private var discardConfirmation: some View {
-
-        ZStack {
-
-            Color.black.opacity(0.65)
-                .ignoresSafeArea()
-
-            VStack(spacing: 12) {
-
-                Text(
-                    "Are you sure you want to discard changes on this journal?"
-                )
-                .font(.system(size: 14))
-                .foregroundStyle(.white.opacity(0.85))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 6)
-
-                // Discard Changes
-
-                Button {
-                    dismiss()
-                } label: {
-
-                    Text("Discard Changes")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(destructiveColor)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 42)
-                        .background(Color.gray.opacity(0.35))
-                        .clipShape(Capsule())
-                }
-
-                // Keep Editing
-
-                Button {
-                    showDiscardAlert = false
-                } label: {
-
-                    Text("Keep Editing")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 42)
-                        .background(Color.gray.opacity(0.35))
-                        .clipShape(Capsule())
-                }
-            }
-            .padding(16)
-            .frame(maxWidth: 280)
-            .background(surfaceColor)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-        }
+#Preview {
+    JournalEditorView { title, content in
+        print("Title: \(title)")
+        print("Content: \(content)")
     }
 }
 

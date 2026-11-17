@@ -4,25 +4,35 @@ import SwiftUI
 private enum JournalListColors {
 
     static let primaryAccent = Color(
-        red: 127.0 / 255, green: 129.0 / 255, blue: 255.0 / 255
+        red: 127.0 / 255,
+        green: 129.0 / 255,
+        blue: 255.0 / 255
     )
 
     static let textAccent = Color(
-        red: 175.0 / 255, green: 153.0 / 255, blue: 253.0 / 255
+        red: 175.0 / 255,
+        green: 153.0 / 255,
+        blue: 253.0 / 255
     )
 
     static let textPrimary = Color.white
 
     static let textSecondary = Color(
-        red: 163.0 / 255, green: 154.0 / 255, blue: 154.0 / 255
+        red: 163.0 / 255,
+        green: 154.0 / 255,
+        blue: 154.0 / 255
     )
 
     static let surfaceCard = Color(
-        red: 28.0 / 255, green: 28.0 / 255, blue: 30.0 / 255
+        red: 28.0 / 255,
+        green: 28.0 / 255,
+        blue: 30.0 / 255
     )
 
     static let destructive = Color(
-        red: 253.0 / 255, green: 69.0 / 255, blue: 60.0 / 255
+        red: 253.0 / 255,
+        green: 69.0 / 255,
+        blue: 60.0 / 255
     )
 }
 
@@ -38,6 +48,9 @@ struct HomeJournalList: View {
     let onDelete: (JournalEntry) -> Void
     let onUpdate: (JournalEntry, String, String) -> Void
 
+    // Opens the Add Journal editor
+    let onAddJournal: () -> Void
+
     @State private var searchText = ""
     @State private var entryToDelete: JournalEntry?
     @State private var showDeleteAlert = false
@@ -45,6 +58,7 @@ struct HomeJournalList: View {
     @State private var entryToEdit: JournalEntry?
 
     private var filteredEntries: [JournalEntry] {
+
         guard !searchText.isEmpty else {
             return entries
         }
@@ -56,6 +70,7 @@ struct HomeJournalList: View {
     }
 
     private var sortedEntries: [JournalEntry] {
+
         switch sortOption {
 
         case .bookmark:
@@ -63,6 +78,7 @@ struct HomeJournalList: View {
                 if $0.isBookmarked != $1.isBookmarked {
                     return $0.isBookmarked
                 }
+
                 return $0.dateCreated > $1.dateCreated
             }
 
@@ -86,8 +102,11 @@ struct HomeJournalList: View {
                     .padding(.top, 16)
 
                 ScrollView {
+
                     LazyVStack(spacing: 14) {
+
                         ForEach(sortedEntries) { entry in
+
                             journalCard(entry)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
@@ -97,6 +116,7 @@ struct HomeJournalList: View {
                                     edge: .trailing,
                                     allowsFullSwipe: false
                                 ) {
+
                                     Button(role: .destructive) {
                                         entryToDelete = entry
                                         showDeleteAlert = true
@@ -126,8 +146,8 @@ struct HomeJournalList: View {
         .animation(.easeInOut(duration: 0.2), value: showDeleteAlert)
 
         // MARK: Edit Existing Journal
-
         .sheet(item: $entryToEdit) { entry in
+
             JournalEditorView(entry: entry) { title, content in
                 onUpdate(entry, title, content)
             }
@@ -137,6 +157,7 @@ struct HomeJournalList: View {
     // MARK: Header
 
     private var header: some View {
+
         HStack {
 
             Text("Journal")
@@ -148,6 +169,7 @@ struct HomeJournalList: View {
             HStack(spacing: 28) {
 
                 Menu {
+
                     Button("Sort by Bookmark") {
                         sortOption = .bookmark
                     }
@@ -155,12 +177,17 @@ struct HomeJournalList: View {
                     Button("Sort by Entry Date") {
                         sortOption = .entryDate
                     }
+
                 } label: {
+
                     Image(systemName: "line.3.horizontal.decrease")
                 }
                 .accessibilityLabel("Sort journals")
 
-                NavigationLink(value: "addJournal") {
+                // FIX: Use a normal Button instead of NavigationLink
+                Button {
+                    onAddJournal()
+                } label: {
                     Image(systemName: "plus")
                 }
                 .buttonStyle(.plain)
@@ -170,17 +197,18 @@ struct HomeJournalList: View {
             .foregroundStyle(JournalListColors.textPrimary)
             .padding(.horizontal, 22)
             .frame(height: 48)
-            .background(JournalListColors.surfaceCard)
-            .clipShape(Capsule())
+            .glassEffect(.regular, in: Capsule())
         }
     }
 
     // MARK: Journal Card
 
     private func journalCard(_ entry: JournalEntry) -> some View {
+
         VStack(alignment: .leading, spacing: 12) {
 
             HStack {
+
                 Text(entry.title)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(JournalListColors.textAccent)
@@ -190,6 +218,7 @@ struct HomeJournalList: View {
                 Button {
                     onBookmark(entry)
                 } label: {
+
                     Image(
                         systemName: entry.isBookmarked
                             ? "bookmark.fill"
@@ -228,6 +257,7 @@ struct HomeJournalList: View {
     // MARK: Search Bar
 
     private var searchBar: some View {
+
         HStack(spacing: 12) {
 
             Image(systemName: "magnifyingglass")
@@ -245,6 +275,7 @@ struct HomeJournalList: View {
             Button {
                 // Voice search will be connected later
             } label: {
+
                 Image(systemName: "mic")
                     .font(.system(size: 24))
                     .foregroundStyle(JournalListColors.textSecondary)
@@ -263,7 +294,9 @@ struct HomeJournalList: View {
     // MARK: Delete Confirmation
 
     private var deleteConfirmation: some View {
+
         ZStack {
+
             Color.black.opacity(0.65)
                 .ignoresSafeArea()
 
@@ -283,6 +316,7 @@ struct HomeJournalList: View {
                         entryToDelete = nil
                         showDeleteAlert = false
                     } label: {
+
                         Text("Cancel")
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
@@ -292,12 +326,16 @@ struct HomeJournalList: View {
                     }
 
                     Button {
+
                         if let entry = entryToDelete {
                             onDelete(entry)
                         }
+
                         entryToDelete = nil
                         showDeleteAlert = false
+
                     } label: {
+
                         Text("Delete")
                             .fontWeight(.semibold)
                             .foregroundStyle(.white)

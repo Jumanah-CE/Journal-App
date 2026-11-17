@@ -1,3 +1,4 @@
+
 import SwiftUI
 import SwiftData
 
@@ -5,9 +6,12 @@ import SwiftData
 struct MyApp: App {
 
     var body: some Scene {
+
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.dark)
         }
         .modelContainer(for: JournalEntry.self)
     }
 }
+
